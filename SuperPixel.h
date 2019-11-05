@@ -8,10 +8,10 @@ using namespace std;
 using namespace cv;
 
 //define date structure
-typedef struct PixelFeatur
+typedef struct PixelFeature
 {
 	int x = -1;
-	int y = -2;
+	int y = -1;
 	double l = numeric_limits<double>::max();
 	double a = numeric_limits<double>::max();
 	double b = numeric_limits<double>::max();
@@ -22,7 +22,7 @@ typedef struct PixelInfo
 	double distance = numeric_limits<double>::max();
 };
 typedef vector<vector<PixelInfo>> VecPixelInfoMatrix;
-typedef vector<vector<PixelFeatur>> VecPixelFeaturMatrix;
+typedef vector<vector<PixelFeature>> VecPixelFeaturMatrix;
 typedef vector<vector<int>> VecIntMatrix;
 typedef vector<vector<double>> VecDoubleMatrix;
 
@@ -37,9 +37,8 @@ class SuperPixel
 
 		VecIntMatrix center_label;
 		VecPixelInfoMatrix AllPixelInfo;
-		vector<int> center_x;
-		vector<int> center_y;
-		vector<PixelFeatur> center_info;
+		vector<int> center_count;
+		vector<PixelFeature> center_info;
 
 		double weight = 0;
 
@@ -51,7 +50,8 @@ class SuperPixel
 		int mesh_height = -1;
 		int mesh_width = -1;
 	public:
-		void Initialize();
+		template<class T> void RecoverVector(vector<T>& vec);
+		void Initialize(cv::Mat image);
 		void FindSuperPixcel(cv::Mat image);
-		void ComputDistance();
+		double ComputDistance(PixelFeature center_info, PixelFeature Pixel_info);
 };
