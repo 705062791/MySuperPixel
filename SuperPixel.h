@@ -8,12 +8,21 @@ using namespace std;
 using namespace cv;
 
 //define date structure
+typedef struct PixelFeatur
+{
+	int x = -1;
+	int y = -2;
+	double l = numeric_limits<double>::max();
+	double a = numeric_limits<double>::max();
+	double b = numeric_limits<double>::max();
+};
 typedef struct PixelInfo
 {
 	int label = -1;
 	double distance = numeric_limits<double>::max();
 };
 typedef vector<vector<PixelInfo>> VecPixelInfoMatrix;
+typedef vector<vector<PixelFeatur>> VecPixelFeaturMatrix;
 typedef vector<vector<int>> VecIntMatrix;
 typedef vector<vector<double>> VecDoubleMatrix;
 
@@ -30,6 +39,7 @@ class SuperPixel
 		VecPixelInfoMatrix AllPixelInfo;
 		vector<int> center_x;
 		vector<int> center_y;
+		vector<PixelFeatur> center_info;
 
 		double weight = 0;
 

@@ -25,6 +25,7 @@ SuperPixel::~SuperPixel()
 
 void SuperPixel::Initialize()
 {
+
 	this->center_x.clear();
 	this->center_y.clear();
 	//initialize the center
@@ -36,6 +37,7 @@ void SuperPixel::Initialize()
 			this->center_y.push_back(i);
 		}
 	}
+
 
 	//initialize the pixelinfo
 	PixelInfo single_pixel_info;
@@ -59,10 +61,30 @@ void SuperPixel::FindSuperPixcel(cv::Mat image)
 
 	for (int i = 0; i < this->regression_times; i++)
 	{
-		//comput the d in (2*interval)*(2*interval) range
-		for (int j = 0; j < center_x.size(); j++)
+		//process the neighbor pixel information double interval*double interval
+		for (int j = 0; j < this->mesh_height; j++)
 		{
+			for (int k = 0; k < this->mesh_width; k++)
+			{
+				int x = this->center_x[j*this->mesh_width + k];
+				int y = this->center_y[j*this->mesh_width + k];
+				
+				int min_x = x - 3 / 2 * this->interval >= 0 ? int(x - 3 / 2 * this->interval) : 0;
+				int max_x = x + 3 / 2 * this->interval < this->img_width ? int(x + 3 / 2 * this->interval) : this->img_width;
 
+				int min_y = y - 3 / 2 * this->interval >= 0 ? int(y - 3 / 2 * this->interval) : 0;
+				int max_y = y + 3 / 2 * this->interval < this->img_height ? int(y + 3 / 2 * this->interval) : this->img_height;
+
+				for (int m = min_y; m < max_y; m++)
+				{
+					for (int n = min_x; n < max_x; n++)
+					{
+						//comput distance
+
+					}
+				}
+
+			}
 		}
 	}
 }
