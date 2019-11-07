@@ -20,6 +20,10 @@ SuperPixel::SuperPixel(int superpixel_num, int img_height, int img_width, double
 
 SuperPixel::~SuperPixel()
 {
+	RecoverVector(center_label);
+	RecoverVector(AllPixelInfo);
+	RecoverVector(center_count);
+	RecoverVector(center_info);
 
 }
 
@@ -44,9 +48,9 @@ void SuperPixel::Initialize(cv::Mat image)
 			single_pixel.x = j;
 			single_pixel.y = i;
 
-			single_pixel.l = Lab_image.at<Vec3i>(i, j)[0];
-			single_pixel.a = Lab_image.at<Vec3i>(i, j)[1];
-			single_pixel.b = Lab_image.at<Vec3i>(i, j)[2];
+			single_pixel.l = Lab_image.at<Vec3b>(i, j)[0]*100/255;
+			single_pixel.a = Lab_image.at<Vec3b>(i, j)[1]-128;
+			single_pixel.b = Lab_image.at<Vec3b>(i, j)[2]-128;
 
 			center_info.push_back(single_pixel);
 
@@ -60,18 +64,10 @@ void SuperPixel::Initialize(cv::Mat image)
 	
 	for (int i = 0; i < img_height; i++)
 	{
-		AllPixelInfo.resize(img_width);
+		AllPixelInfo[i].resize(img_width);
 	}
 
-	//for (int i = 0; i < this->img_height; i++)
-	//{
-	//	for (int j = 0; j < this->img_width; j++)
-	//	{
-	//		AllPixelInfo[i][j]=single_pixel_info;
-	//	}
-
-	//}
-
+	cout << "Initialize over" << endl;
 }
 
 double SuperPixel::ComputDistance(PixelFeature center_info, PixelFeature Pixel_info)
@@ -114,9 +110,9 @@ void SuperPixel::FindSuperPixcel(cv::Mat image)
 						PixelFeature single_pixel =
 						{
 							n,m,
-							Lab_image.at<cv::Vec3i>(m,n)[0],
-							Lab_image.at<cv::Vec3i>(m,n)[1],
-							Lab_image.at<cv::Vec3i>(m,n)[2]
+							Lab_image.at<cv::Vec3b>(m,n)[0] * 100 / 255,
+							Lab_image.at<cv::Vec3b>(m,n)[1] - 128,
+							Lab_image.at<cv::Vec3b>(m,n)[2] - 128
 						};
 
 						double D = ComputDistance(center_info[double(j) * mesh_width + k],single_pixel);
@@ -160,11 +156,146 @@ void SuperPixel::FindSuperPixcel(cv::Mat image)
 
 			center_info[j].x = new_x;
 			center_info[j].y = new_y;
-			center_info[j].l = Lab_image.at<cv::Vec3i>(new_y, new_x)[0];
-			center_info[j].a = Lab_image.at<cv::Vec3i>(new_y, new_x)[1];
-			center_info[j].b = Lab_image.at<cv::Vec3i>(new_y, new_x)[2];
+			center_info[j].l = Lab_image.at<cv::Vec3b>(new_y, new_x)[0] * 100 / 255;
+			center_info[j].a = Lab_image.at<cv::Vec3b>(new_y, new_x)[1] - 128;
+			center_info[j].b = Lab_image.at<cv::Vec3b>(new_y, new_x)[2] - 128;
 
 		}
 
+		cout << "第" << i << "次更新结束" << endl;
 	}
+
+	cout << "FindSuperPixcel over" << endl;
+}
+
+void SuperPixel::create_connectivity(cv::Mat image)
+{
+	int neighbor_label = 0;
+	cv::Mat Lab_image;
+	cv::cvtColor(image, Lab_image, CV_BGR2Lab);
+	
+	//建立一个掩码的矩阵，标记是否重新分类
+	cv::Mat AllPixelInfoMask = cv::Mat::zeros(cv::Size(img_width, img_height), CV_8U);
+
+	//建立一个4通量的矩阵
+	const int dx4[4] = {-1 ,  0 , 1 , 0};
+	const int dy4[4] = { 0 , -1 , 0 , 1 };
+
+	//设置阈值
+	const int lims = (img_height * img_width) / (int)(center_info.size());
+
+	for (int i = 0; i < img_height; i++)
+	{
+		for (int j = 0; j < img_width; j++)
+		{
+			//如果没有被分类
+			if (AllPixelInfoMask.at<uchar>(i, j) == 0)
+			{
+				
+				vector<cv::Point2i> elements;
+				elements.push_back(cv::Point2i(j, i));
+				AllPixelInfoMask.at<uchar>(j, i) = 1;
+
+				//查看上下左右4个分量
+				for (int m = 0; m < 4; m++)
+				{
+					int x = elements[0].x + dx4[m];
+					int y = elements[0].y + dy4[m];
+
+					//判断是否越过了边界
+					if (x < img_width && x >= 0 && y < img_height && y >= 0)
+					{
+						//如果该联通分量已经有了类别
+						if (AllPixelInfoMask.at<uchar>(y, x) != 0)
+						{
+							neighbor_label = AllPixelInfo[y][x].label;
+						}
+					}
+				}
+
+
+				//开始查找周围相同标签的像素
+				int count = 1;
+				for (int m = 0; m < count; m++)
+				{
+					for (int n = 0; n < 4; n++)
+					{
+						int x = elements[m].x + dx4[n];
+						int y = elements[m].y + dy4[n];
+
+						if (x < img_width && x >= 0 && y < img_height && y >= 0)
+						{
+							if (AllPixelInfo[i][j].label == AllPixelInfo[y][x].label)
+							{
+								elements.push_back(cv::Point2i(x, y));
+								AllPixelInfoMask.at<uchar>(y, x) = 1;
+								count += 1;
+							}
+						}
+
+					}
+				}
+
+				if (count <= lims >> 2)
+				{
+					for (int m = 0; m < count; m++)
+					{
+						AllPixelInfo[elements[m].y][elements[m].x].label = neighbor_label;
+					}
+				}
+			    
+			}
+		}
+	}	
+
+	cout << "create_connectivity over" << endl;
+}
+
+void SuperPixel::display(cv::Mat image)
+{
+	int dx8[8] = { -1 , 0 , 1 , 1 , 1 ,  0 , -1 , -1 };
+	int dy8[8] = {  1 , 1 , 1 , 0 ,-1 , -1 , -1 ,  0 };
+
+	vector<cv::Point2i> coutour_pixel;
+	Mat color_mask = cv::Mat::zeros(cv::Size(img_width, img_height), CV_8U);
+
+	for (int i = 0; i < img_height; i++)
+	{
+		for (int j = 0; j < img_width; j++)
+		{
+			int count = 0;
+
+			for (int m = 0; m < 8; m++)
+			{
+				int x = j + dx8[m];
+				int y = i + dy8[m];
+
+				if (x >= 0 && x < img_width && y >= 0 && y < img_height)
+				{
+					if (color_mask.at<uchar>(y, x) == 0 && AllPixelInfo[i][j].label != AllPixelInfo[y][x].label)
+					{
+						count++;
+					}
+				}
+			}
+
+			if (count >= 2)
+			{
+				color_mask.at<uchar>(i, j) = 1;
+				coutour_pixel.push_back(cv::Point2i(j,i));
+			}
+
+		}
+	}
+
+
+	for (int i = 0; i < coutour_pixel.size(); i++)
+	{
+		image.at<Vec3b>(coutour_pixel[i].y, coutour_pixel[i].x) = Vec3b(0, 0, 255);
+	}
+
+	cv::namedWindow("SuperPixel");
+	cv::imshow("SuperPixel", image);
+	cv::waitKey(0);
+
 }

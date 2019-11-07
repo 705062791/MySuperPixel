@@ -32,9 +32,6 @@ typedef vector<vector<double>> VecDoubleMatrix;
 class SuperPixel
 {
 	private:
-		SuperPixel(int superpixel_num, int img_height, int img_width, double weight, int regression_times);
-		~SuperPixel();
-
 		VecIntMatrix center_label;
 		VecPixelInfoMatrix AllPixelInfo;
 		vector<int> center_count;
@@ -50,8 +47,14 @@ class SuperPixel
 		int mesh_height = -1;
 		int mesh_width = -1;
 	public:
+		~SuperPixel();
+		SuperPixel(int superpixel_num, int img_height, int img_width, double weight, int regression_times);
+		double ComputDistance(PixelFeature center_info, PixelFeature Pixel_info);
 		template<class T> void RecoverVector(vector<T>& vec);
 		void Initialize(cv::Mat image);
 		void FindSuperPixcel(cv::Mat image);
-		double ComputDistance(PixelFeature center_info, PixelFeature Pixel_info);
+		void create_connectivity(cv::Mat image);
+		void display(cv::Mat image);
+		
+
 };
