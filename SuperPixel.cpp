@@ -82,12 +82,19 @@ double SuperPixel::ComputDistance(PixelFeature center_info, PixelFeature Pixel_i
 
 void SuperPixel::FindSuperPixcel(cv::Mat image)
 {
+	clock_t part_1_start;
+	clock_t part_1_end;
+
+	clock_t part_2_start;
+	clock_t part_2_end;
+
 	Mat Lab_image;
 
 	cv::cvtColor(image, Lab_image, CV_BGR2Lab);
 
 	for (int i = 0; i < this->regression_times; i++)
 	{
+		part_1_start = clock();
 		//process the neighbor pixel information double interval*double interval
 		for (int j = 0; j < this->mesh_height; j++)
 		{
@@ -127,7 +134,10 @@ void SuperPixel::FindSuperPixcel(cv::Mat image)
 
 			}
 		}
+		part_1_end = clock();
 
+
+		part_2_start = clock();
 		//initial center count
 		center_count.clear();
 		center_count.resize(int(double(mesh_height) * mesh_width));
@@ -162,10 +172,12 @@ void SuperPixel::FindSuperPixcel(cv::Mat image)
 
 		}
 
-		cout << "第" << i << "次更新结束" << endl;
-	}
+		part_2_end = clock();
 
-	cout << "FindSuperPixcel over" << endl;
+	}
+	printf("part 1 cost %f ms\n", double(part_1_end) - part_1_start);
+	printf("part 2 cost %f ms\n", double(part_2_end) - part_2_start);
+
 }
 
 void SuperPixel::create_connectivity(cv::Mat image)
@@ -178,7 +190,7 @@ void SuperPixel::create_connectivity(cv::Mat image)
 	cv::Mat AllPixelInfoMask = cv::Mat::zeros(cv::Size(img_width, img_height), CV_8U);
 
 	//建立一个4通量的矩阵
-	const int dx4[4] = {-1 ,  0 , 1 , 0};
+	const int dx4[4] = {-1 ,  0 , 1 , 0 };
 	const int dy4[4] = { 0 , -1 , 0 , 1 };
 
 	//设置阈值
@@ -194,7 +206,7 @@ void SuperPixel::create_connectivity(cv::Mat image)
 				
 				vector<cv::Point2i> elements;
 				elements.push_back(cv::Point2i(j, i));
-				AllPixelInfoMask.at<uchar>(j, i) = 1;
+				AllPixelInfoMask.at<uchar>(i, j) = 1;
 
 				//查看上下左右4个分量
 				for (int m = 0; m < 4; m++)
@@ -225,11 +237,12 @@ void SuperPixel::create_connectivity(cv::Mat image)
 
 						if (x < img_width && x >= 0 && y < img_height && y >= 0)
 						{
-							if (AllPixelInfo[i][j].label == AllPixelInfo[y][x].label)
+							if (AllPixelInfo[i][j].label == AllPixelInfo[y][x].label&& AllPixelInfoMask.at<uchar>(y, x)==0)
 							{
 								elements.push_back(cv::Point2i(x, y));
 								AllPixelInfoMask.at<uchar>(y, x) = 1;
 								count += 1;
+								
 							}
 						}
 
@@ -248,7 +261,7 @@ void SuperPixel::create_connectivity(cv::Mat image)
 		}
 	}	
 
-	cout << "create_connectivity over" << endl;
+
 }
 
 void SuperPixel::display(cv::Mat image)
