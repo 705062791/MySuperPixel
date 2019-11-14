@@ -304,7 +304,7 @@ void SuperPixel::display(cv::Mat image)
 
 	for (int i = 0; i < coutour_pixel.size(); i++)
 	{
-		image.at<Vec3b>(coutour_pixel[i].y, coutour_pixel[i].x) = Vec3b(0, 0, 255);
+		image.at<Vec3b>(coutour_pixel[i].y, coutour_pixel[i].x) = Vec3b(255, 255, 255);
 	}
 
 	cv::namedWindow("SuperPixel");
